@@ -7,7 +7,9 @@ class App extends Component {
     super();
     this.state = {
       todos: [],
-      inputDescription: ""
+      inputDescription: "",
+      inputSearch: "",
+      filteredTodos: []
     };
   }
   componentDidMount() {
@@ -18,18 +20,23 @@ class App extends Component {
       .delete(`https://ib-api-todo-list.herokuapp.com/todos/${index}`)
       .then(res => console.log(res))
       .catch(err => console.log(err));
-      this.getAllTodos()
+    this.getAllTodos();
+  };
+  handleOnChange = e => {
+    this.setState({
+      [e.target.name]: e.target.value
+    });
   };
 
   submitTodo = async () => {
     await axios
-      .post("https://ib-api-todo-list.herokuapp.com/todos",{
+      .post("https://ib-api-todo-list.herokuapp.com/todos", {
         description: this.state.inputDescription,
         done: false
       })
       .then(res => console.log(res))
       .catch(err => console.log(err));
-      this.getAllTodos()
+    this.getAllTodos();
   };
   getAllTodos = () => {
     axios
@@ -37,12 +44,19 @@ class App extends Component {
       .then(res => this.setState({ todos: res.data.data }))
       .catch(err => console.log(err));
   };
-
-  handleOnChange = e => {
-    this.setState({
-      [e.target.name]: e.target.value
-    });
+  
+  handleSearch = async (e) => {
+    await this.handleOnChange(e);
+    axios
+      .get(
+        `https://ib-api-todo-list.herokuapp.com/todos/search?description=${
+          this.state.inputSearch
+        }`
+      )
+      .then(res => this.setState({ filteredTodos: res.data }))
+      .catch(err => console.log(err));
   };
+
   render() {
     return (
       <div>
@@ -55,15 +69,33 @@ class App extends Component {
           onChange={this.handleOnChange}
         />
         <button onClick={() => this.submitTodo()}>Submit</button>
-        {this.state.todos.map((todo, index) => (
-          <TodoDetail
-            description={todo.description}
-            done={JSON.stringify(todo.done)}
-            key={index}
-            index={index}
-            deleteTodo={this.deleteTodo}
-          />
-        ))}
+        <input
+          type="text"
+          name="inputSearch"
+          value={this.state.inputSearch}
+          onChange={this.handleSearch}
+        />
+        {/* <button onClick={() => this.handleSearch()}>Search</button> */}
+        {this.state.inputSearch === "" &&
+          this.state.todos.map((todo, index) => (
+            <TodoDetail
+              description={todo.description}
+              done={JSON.stringify(todo.done)}
+              key={index}
+              index={index}
+              deleteTodo={this.deleteTodo}
+            />
+          ))}
+        {this.state.inputSearch !== "" &&
+          this.state.filteredTodos.map((todo, index) => (
+            <TodoDetail
+              description={todo.description}
+              done={JSON.stringify(todo.done)}
+              key={index}
+              index={index}
+              deleteTodo={this.deleteTodo}
+            />
+          ))}
       </div>
     );
   }
